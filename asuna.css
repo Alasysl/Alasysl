@@ -1,14 +1,14 @@
 /*
 Theme Owned and Made by VaporousCreeper#9514
   
-Background Img: https://imgur.com/QtNPCNq.jpg 
-Transparency2 Module: https://raw.githack.com/Ruben7173/Ruben7173.github.io/master/BetterDiscord-Themes/Modules/transparency2.css - By Ruben7173#5048
+Background Img: https://imgur.com/QtNPCNq.png 
+Transparency2 Module: https://raw.githubusercontent.com/Alasysl/Alasysl/master/transparency2.css - By Ruben7173#5048
 
 The 2 items above are not owned by me, They go to there respected owners
 */
 
 :root{
-    --background: url('https://imgur.com/QtNPCNq.jpg');
+    --background: url('https://imgur.com/QtNPCNq.png');
 
     --transparency-1: linear-gradient(to right, rgba(0,0,0,0.55), rgba(0,0,0,0.55));
 	--transparency-2: linear-gradient(to right, rgba(0,0,0,0.55), rgba(0,0,0,0.55));
