@@ -22,32 +22,45 @@ body{
 }
 
 /* ======== 標題置於畫面上半區中央 ======== */
-.header{
-  position:fixed;
-  top:5vh;
-  left:50%;
-  transform:translate(-50%,-50%);
-  text-align:center;
-  font-size:clamp(36px,4.2vw,60px);
-  font-weight:900;
-  letter-spacing:.5px;
-  color:#eaffff;
-  text-shadow:
-    0 0 12px rgba(255,255,255,.6),
-    0 0 25px rgba(125,243,255,.6),
-    0 0 40px rgba(47,179,255,.5);
-  z-index:5;
-  user-select:none;
+.header {
+  position: fixed;
+  top: 5vh;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: clamp(36px, 4.2vw, 60px);
+  font-weight: 900;
+  letter-spacing: .5px;
+  background: linear-gradient(90deg, #fff6a3, #aaf4ff, #ffb3f6, #fff6a3);
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbowShift 6s linear infinite;
+  text-shadow: 0 0 20px rgba(255, 255, 255, .6);
+  z-index: 5;
+  user-select: none;
+}
+
+@keyframes rainbowShift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
 }
 
 /* ======== 主要容器 ======== */
-.container{
-  position:relative; z-index:3;
-  display:grid; grid-template-columns:5fr minmax(10px,1fr) 4fr;
-  align-items:center;
-  gap:clamp(12px,2vw,24px);
-  padding:clamp(220px,24vh,260px) clamp(12px,3vw,36px) clamp(28px,6vh,48px);
-  width:100%; max-width:1920px; margin:0 auto;
+.container {
+  position: fixed;
+  top: 56%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(60px, 6vw, 120px);
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 1600px;
+  padding: 20px;
+  z-index: 3;
 }
 .left{display:flex;justify-content:center;align-items:center;}
 .right{display:flex;justify-content:flex-start;}
@@ -102,11 +115,26 @@ body{
   padding:clamp(12px,1.6vw,24px) clamp(16px,1.8vw,28px);
   display:flex; flex-direction:column; gap:clamp(10px,1.2vw,16px);
 }
-.drawn-area{
-  flex:1; min-height:clamp(200px,26vh,380px);
-  border:3px solid rgba(255,217,0,.6); border-radius:10px;
-  background:rgba(255,255,255,.08);
-  padding:10px; overflow:auto; position:relative;
+.drawn-area {
+  flex: none;                     /* 不再隨父層撐大 */
+  height: 380px;                  /* 固定顯示高度，可依需要調整 */
+  overflow-y: auto;               /* 超出可滾動 */
+  border: 3px solid rgba(255,217,0,.6);
+  border-radius: 10px;
+  background: rgba(255,255,255,.08);
+  padding: 10px;
+  position: relative;
+}
+
+.log {
+  margin-top: 10px;
+  height: 160px;                  /* 固定高度 */
+  overflow-y: auto;               /* 超出可滾動 */
+  border: 1px solid rgba(255,255,255,.5);
+  background: rgba(255,255,255,.08);
+  padding: 10px;
+  border-radius: 6px;
+  font-size: clamp(14px,1.2vw,18px);
 }
 .drawn-balls{
   display:grid;
@@ -296,14 +324,14 @@ const HOVER_MS=1500,FLY_MS=900,STAGGER=200;
 document.getElementById('drawButton').addEventListener('click',drawBalls);
 function drawBalls() {
   const count = Math.max(1, parseInt(document.getElementById('drawCount').value) || 1);
-  const limit = Math.max(1, parseInt(document.getElementById('drawLimit')?.value) || 25);
   const drawButton = document.getElementById('drawButton');
   const picked = [];
+  const limit = 100; // 固定 0–100
 
   // 若已達上限 → 禁用按鈕並返回
-  if (drawn.length >= limit) {
+  if (drawn.length > limit) {
     const warn = document.createElement('div');
-    warn.textContent = `⚠ 已達抽球上限 (${limit} 顆)`;
+    warn.textContent = `⚠ 已達抽球上限 (101 顆)`;
     warn.style.color = '#ffcc00';
     document.getElementById('log').prepend(warn);
     drawButton.disabled = true;
@@ -312,13 +340,13 @@ function drawBalls() {
     return;
   }
 
-  // 準備「尚未抽出」的號碼池
+  // ✅ 改成從 0 開始
   const available = [];
-  for (let i = 1; i <= limit; i++) {
+  for (let i = 0; i <= limit; i++) {
     if (!drawn.includes(i)) available.push(i);
   }
 
-  // 打亂號碼池
+  // 打亂
   for (let i = available.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [available[i], available[j]] = [available[j], available[i]];
@@ -332,27 +360,21 @@ function drawBalls() {
     picked.push(n);
   }
 
-  // 更新紀錄
   logCount++;
   const entry = document.createElement('div');
-  entry.textContent = `第${logCount}次抽球：抽出 ${picked.join(', ')}（共 ${drawn.length}/${limit} 顆）`;
+  entry.textContent = `第${logCount}次抽球：抽出 ${picked.join(', ')}（共 ${drawn.length}/101 顆）`;
   document.getElementById('log').prepend(entry);
 
-  if (drawn.length >= limit) {
+  if (drawn.length > limit) {
     const warn = document.createElement('div');
-    warn.textContent = `⚠ 已達抽球上限 (${limit} 顆)`;
+    warn.textContent = `⚠ 已達抽球上限 (101 顆)`;
     warn.style.color = '#ffcc00';
     document.getElementById('log').prepend(warn);
     drawButton.disabled = true;
-    drawButton.style.opacity = 0.5;
-    drawButton.style.cursor = 'not-allowed';
   }
 
-  // 特效閃光
   ambientFlash.classList.add('on');
   setTimeout(() => ambientFlash.classList.remove('on'), 500);
-
-  // 🚫 不再直接 append 球，改由動畫結束後的 showWinner(num) 顯示
   launchToCircle(picked);
 }
 // 重置按鈕：清空所有中獎與紀錄
@@ -426,4 +448,3 @@ snowImg.onload=initSnow;
 </script>
 </body>
 </html>
-position:fixed
