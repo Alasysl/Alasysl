@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<title>BIGBASE BINGO</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+/* =========================================================
+   🎨 版面與背景（深色粉筆風）
+   ========================================================= */
+html, body { height: 100%; margin: 0; }
+body{
+  font-family:'Chalkboard','Comic Sans MS',system-ui,-apple-system,sans-serif;
+  background:
+    radial-gradient(1200px 800px at 50% 10%, #4b3a39 0%, #342626 60%, #2a1e1e 100%),
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.05));
+  color:#fff;
+}
+
+/* 全頁置中 */
+.page{ min-height:100svh; display:grid; place-items:center; padding:18px; }
+
+/* 左右兩欄：左設定、右賓果盤 */
+.app{
+  display:flex;
+  align-items:flex-start;
+  gap:40px;
+  max-width:1150px;
+}
+
+/* =========================================================
+   📋 左側設定欄
+   ========================================================= */
+#settings{
+  position:relative;
+  flex:0 0 380px;
+  background:#4a3b30;
+  border-right:3px solid #2a1f18;
+  padding:20px;
+  box-sizing:border-box;
+  box-shadow:inset -3px 0 8px rgba(0,0,0,.5);
+  display:flex; flex-direction:column;
+  overflow-y:auto;
+  overflow-x:hidden;
+  line-height:1.55;
+  scrollbar-width:thin;
+}
+
+#settings h2{
+  font-size:22px; color:#ffcc66;
+  text-shadow:1px 1px 2px #000; margin:0 0 10px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+
+/* 📸 截圖按鈕（你原有的） */
+#captureBtn{
+  background:#6b513c; color:#fff; border:none;
+  padding:6px 10px; border-radius:6px;
+  font-size:14px; cursor:pointer; transition:background .2s;
+}
+#captureBtn:hover{ background:#8a6a51; }
+
+label{ font-size:14px; opacity:.9; }
+
+/* 遊戲 ID */
+#gameIdInput{
+  width:90%; padding:8px 10px; margin:6px auto 12px;
+  border:none; border-radius:6px; background:#6a4e3a; color:#fff;
+  text-align:center; font-size:14px;
+}
+
+button{
+  background:#7c5c45; color:#fff; border:none;
+  padding:10px 12px; margin:6px 0; cursor:pointer;
+  font-size:16px; border-radius:8px; transition:background .2s;
+}
+button:hover{ background:#a47d5f; }
+
+.hint{
+  margin-top:10px; font-size:13px; line-height:1.4;
+  color:#ffd99a; opacity:.9;
+}
+
+/* 規則段落與間距（照你之前） */
+#settings .rules { margin-top:0; padding-top:0; }
+#settings .rules h3{ margin-top:6px; margin-bottom:6px; }
+#settings .rules p{ font-size:14px; color:#fff; margin:4px 0 10px; }
+#settings hr{ border:1px dashed #7a5d43; opacity:.8; margin:6px 0; }
+#settings .rules h3:first-child{ margin-top:0; }
+
+/* 滾動陰影 */
+#settings::before, #settings::after{
+  content:""; position:absolute; left:0; right:0; height:14px;
+  pointer-events:none; opacity:0; transition:opacity .18s ease;
+}
+#settings::before{ top:0; background:linear-gradient(to bottom, rgba(0,0,0,.45), rgba(0,0,0,0)); }
+#settings::after { bottom:0; background:linear-gradient(to top, rgba(0,0,0,.45), rgba(0,0,0,0)); }
+#settings.shadow-top::before{ opacity:1; }
+#settings.shadow-bottom::after{ opacity:1; }
+
+/* =========================================================
+   🎯 賓果盤區域
+   ========================================================= */
+.board-wrap{ position:relative; padding:8px 0 24px 24px; }
+
+.board-header{ display:flex; justify-content:flex-start; align-items:flex-start; margin:0 0 10px 0; }
+.title-stack{ display:flex; flex-direction:column; gap:4px; }
+
+#title{
+  font-size:46px; color:#fff; font-weight:800; letter-spacing:3px;
+  text-shadow:2px 2px 5px #000; user-select:none; margin:0;
+}
+#title, #gameIdDisplay{
+  text-shadow:
+    0 0 1px rgba(255,255,255,.85),
+    0 0 6px rgba(255,255,255,.28),
+    2px 2px 0 rgba(0,0,0,.35);
+}
+#gameIdDisplay{
+  font-size:24px; line-height:1; color:#ffcc66;
+  text-shadow:
+    0 0 1px rgba(255,240,200,.9),
+    0 0 5px rgba(255,220,150,.25),
+    1px 1px 0 rgba(0,0,0,.35);
+}
+
+/* 賓果盤 */
+#bingo-board{
+  display:grid; width:fit-content;
+  grid-template-columns:repeat(5,80px);
+  grid-template-rows:repeat(5,80px);
+  gap:4px; background:#2d2d2d; padding:16px; border-radius:12px;
+  box-shadow:0 0 10px #000 inset;
+}
+.cell{
+  display:flex; justify-content:center; align-items:center;
+  font-size:28px; border-radius:8px; background:rgba(255,255,255,0.06);
+  text-shadow:1px 1px 3px #000; cursor:pointer;
+}
+.cell:focus{ outline:2px dashed #ffcc66; outline-offset:2px; }
+.cell-editor{
+  width:100%; height:100%; border:none; border-radius:8px;
+  background:rgba(0,0,0,.35); color:#fff; text-align:center; font-size:26px;
+}
+
+/* 顏色 */
+.color1{ color:#ff6666; } .color2{ color:#ffcc33; }
+.color3{ color:#66ffff; } .color4{ color:#cc99ff; }
+.color5{ color:#99ff99; }
+
+/* 作者 + 新增 Birk 區塊 */
+.meta{
+  margin-top:12px; text-align:left;
+  position: relative;          /* 讓右側區塊可貼齊底部 */
+  min-height: 160px;           /* 確保高度能容納左圖 */
+}
+.meta .author{ font-size:14px; color:#ffd99a; }
+.meta .author-img{
+  margin-top:6px; width:140px; height:auto;
+  border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+
+/* 右側：幸運數字 + 綿羊 GIF（與左圖底部貼齊） */
+.birk-zone{
+  position:absolute;
+  right:10px;         /* ⬅ 調整距離左側，讓綿羊靠近企鵝 */
+  bottom:25px;            /* GIF高度調整 */
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+.lucky-text{
+  font-size:16px; color:#ffec99; font-weight:600;
+  text-shadow:1px 1px 2px #000;
+}
+.birk-img{
+  width:110px; height:auto; image-rendering:pixelated;
+}
+
+/* 📣 截圖完成提示（右下角浮出） */
+#toast{
+  position:fixed; right:22px; bottom:22px; z-index:9999;
+  background:rgba(30,30,30,.92); color:#fff; padding:10px 14px;
+  border-radius:10px; box-shadow:0 6px 16px rgba(0,0,0,.35);
+  font-size:14px; opacity:0; transform:translateY(8px);
+  pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+}
+#toast.show{ opacity:1; transform:translateY(0); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="app">
+    <!-- 左：設定欄 -->
+    <aside id="settings">
+      <h2>
+        設定
+        <button id="captureBtn">📸 截圖</button>
+      </h2>
+
+      <label for="gameIdInput">遊戲 ID</label>
+      <input id="gameIdInput" type="text" placeholder="例如：PiiBow" maxlength="16" />
+      <button id="btnRandom">🎲 生成亂數賓果盤</button>
+
+      <div class="hint">
+        • 點擊賓果盤任一格，可直接輸入 0–100 的數字。<br>
+        • 系統會檢查「不重複」與「數值範圍」。<br>
+        • 若輸入重複或超出範圍，會退回原值並提示。
+      </div>
+
+      <hr>
+
+      <div class="rules">
+        <h3 style="color:#ffd966; font-size:20px;">💰 主要獎勵</h3>
+        <p>🏆 第一位完成五條線 → <b>150 雪花 ❄️</b><br>
+           🥈 第二位完成五條線 → <b>100 雪花 ❄️</b><br>
+           🥉 第三位完成五條線 → <b>75 雪花 ❄️</b><br>
+           🌟 第四位完成五條線 → <b>50 雪花 ❄️</b></p>
+
+        <hr>
+
+        <h3 style="color:#ffd966; font-size:20px;">🌟 額外線獎（前三條線限定）</h3>
+        <p>⚡ 第一、第二、第三條線出現時，凡該回合中「最先喊出 Bingo！」者，均可獲得 <b>5 雪花 ❄️</b>。<br><br>
+           ⚡ 若同時多人喊出，該條線所有人皆得獎。<br><br>
+           ⚡ 每條線獎勵僅發一次，第4條以後不再發放。<br><br>
+           ⚡ 以遊戲或 Discord 語音喊聲時間為準。</p>
+
+        <hr>
+
+        <h3 style="color:#ffd966; font-size:20px;">✨ 黃金數字獎勵</h3>
+        <p>（比賽前公開抽出，全員共用）<br><br>
+           中 1 個 → <b>5 雪花 ❄️</b><br>
+           中 2 個 → <b>10 雪花 ❄️</b><br>
+           中 3 個 → <b>15 雪花 ❄️</b><br>
+           中 4 個 → <b>20 雪花 ❄️</b><br>
+           中 5 個 → <b>50 雪花 ❄️</b></p>
+      </div>
+    </aside>
+
+    <!-- 右：賓果盤 -->
+    <main class="board-wrap" id="boardArea">
+      <div class="board-header">
+        <div class="title-stack">
+          <h1 id="title">BIGBASE BINGO</h1>
+          <div id="gameIdDisplay"></div>
+        </div>
+      </div>
+
+      <div id="bingo-board"></div>
+
+      <div class="meta">
+        <div class="author">製作者：金黃艾拉企鵝</div>
+        <img class="author-img" src="https://i.ibb.co/mrL4RZQD/2025-10-15-230345.png" alt="作者圖片"/>
+
+        <!-- ✅ 新增：右側幸運數字 + Birk GIF（貼齊左圖底部） -->
+        <div class="birk-zone">
+          <div class="lucky-text" id="luckyNum">今日幸運數字：--</div>
+          <img class="birk-img" src="https://www.artalemaplestory.com/images/monsters/birk.gif" alt="Birk">
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- 📣 提示容器 -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* === 你的原程式：賓果盤隨機 / 編輯（保留不改） === */
+const board=document.getElementById('bingo-board');
+const gameIdInput=document.getElementById('gameIdInput');
+const gameIdDisplay=document.getElementById('gameIdDisplay');
+const btn=document.getElementById('btnRandom');
+
+gameIdInput.addEventListener('input',()=>{
+  let v=gameIdInput.value;
+  if(v.length>16){v=v.slice(0,16);gameIdInput.value=v;}
+  gameIdDisplay.textContent=v.trim();
+});
+
+function generateRandomBingo(){
+  const arr=[];
+  while(arr.length<25){
+    const n=Math.floor(Math.random()*101);
+    if(!arr.includes(n))arr.push(n);
+  }
+  board.innerHTML='';
+  arr.forEach((n,i)=>{
+    const c=document.createElement('div');
+    c.className='cell color'+((i%5)+1);
+    c.textContent=n;
+    c.tabIndex=0;
+    c.addEventListener('click',()=>editCell(c));
+    c.addEventListener('keydown',e=>{if(e.key==='Enter')editCell(c);});
+    board.appendChild(c);
+  });
+}
+btn.addEventListener('click',generateRandomBingo);
+
+function editCell(c){
+  if(c.querySelector('input'))return;
+  const o=c.textContent;
+  const e=document.createElement('input');
+  e.type='number'; e.min=0; e.max=100;
+  e.className='cell-editor'; e.value=o;
+  c.textContent=''; c.appendChild(e); e.focus(); e.select();
+  const cancel=()=>{c.removeChild(e);c.textContent=o;};
+  const commit=()=>{
+    const v=e.value.trim();
+    if(v===''){ cancel(); return; }
+    const n=Number(v);
+    if(!Number.isInteger(n)||n<0||n>100){ alert('請輸入 0–100 整數'); cancel(); return; }
+    const all=[...board.children].map(x=>Number(x.textContent||(x.querySelector('input')?.value??'')));
+    const idx=[...board.children].indexOf(c); all.splice(idx,1);
+    if(all.includes(n)){ alert('數字重複'); cancel(); return; }
+    c.removeChild(e); c.textContent=String(n);
+  };
+  e.addEventListener('blur',commit);
+  e.addEventListener('keydown',k=>{ if(k.key==='Enter')commit(); else if(k.key==='Escape')cancel(); });
+}
+generateRandomBingo();
+
+/* 設定欄高度與右側齊平 + 滾動陰影（照你的） */
+(function(){
+  const s=document.getElementById('settings');
+  const r=document.querySelector('.board-wrap');
+  function setH(){ const h=Math.ceil(r.getBoundingClientRect().height); s.style.maxHeight=(h-12)+'px'; updateShadow(); }
+  window.addEventListener('load',setH);
+  window.addEventListener('resize',setH);
+  function updateShadow(){
+    const atTop=s.scrollTop<=0;
+    const atBottom=s.scrollHeight-s.clientHeight-s.scrollTop<=1;
+    s.classList.toggle('shadow-top',!atTop);
+    s.classList.toggle('shadow-bottom',!atBottom);
+  }
+  s.addEventListener('scroll',updateShadow);
+  setH();
+})();
+
+/* === 📸 截圖提示 === */
+function showToast(msg){
+  const t=document.getElementById('toast');
+  if(!t)return;
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+/* === 📸 截圖（不含作者、四邊留白、正方形） === */
+document.getElementById('captureBtn').addEventListener('click',()=>{
+  const boardArea=document.getElementById('boardArea');
+  const clone=boardArea.cloneNode(true);
+  const meta=clone.querySelector('.meta'); if(meta) meta.remove();
+  const stage=document.createElement('div');
+  stage.style.position='fixed'; stage.style.left='-99999px'; stage.style.top='0';
+  stage.style.background='radial-gradient(1200px 800px at 50% 10%, #4b3a39 0%, #342626 60%, #2a1e1e 100%),linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.05))';
+  stage.style.display='flex'; stage.style.justifyContent='center'; stage.style.alignItems='center';
+  clone.style.margin='0 auto'; clone.style.width='fit-content';
+  stage.appendChild(clone); document.body.appendChild(stage);
+
+  let t=80,b=80,l=60,r=60;
+  const w=clone.scrollWidth, h=clone.scrollHeight;
+  let W=w+l+r, H=h+t+b;
+  if(W>H){const ex=(W-H)/2; t+=ex; b+=ex;}
+  else if(H>W){const ex=(H-W)/2; l+=ex; r+=ex;}
+  stage.style.padding=`${t}px ${r}px ${b}px ${l}px`;
+
+  html2canvas(stage,{backgroundColor:null, scale:2, useCORS:true,
+                     width:Math.ceil(w+l+r), height:Math.ceil(h+t+b)}).then(canvas=>{
+    const raw=(document.getElementById('gameIdInput')?.value||'').trim().slice(0,16);
+    const safe=raw.replace(/[\\/:*?"<>|]+/g,'').trim();
+    const filename=safe?`BIGBASE-${safe}.png`:'BIGBASE.png';
+    const link=document.createElement('a');
+    link.download=filename; link.href=canvas.toDataURL('image/png'); link.click();
+    showToast('✅ 已儲存：'+filename);
+    document.body.removeChild(stage);
+  }).catch(()=>{
+    document.body.removeChild(stage);
+    alert('截圖時發生問題，請再試一次');
+  });
+});
+
+/* === ✅ 幸運數字（載入時自動 0–100） === */
+(function(){
+  const lucky=document.getElementById('luckyNum');
+  if(lucky){
+    const n=Math.floor(Math.random()*101);
+    lucky.textContent='今日幸運數字：'+n;
+  }
+})();
+</script>
+</body>
+</html>
