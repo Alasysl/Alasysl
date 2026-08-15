@@ -14,11 +14,35 @@
 
 body{
   margin:0;
-  background:
-    linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.35)),
-    url('https://i.meee.com.tw/f1THqTQ.png') center/cover no-repeat fixed;
+  position:relative;
+  background:#07131d;
   font-family: "Comic Sans MS","Microsoft JhengHei",system-ui,-apple-system,sans-serif;
   color:#fff; overflow-x:hidden; overflow-y:auto;
+}
+
+/* ======== 背景：完整圖片 + 放大模糊延伸 ======== */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:
+    linear-gradient(rgba(0,0,0,.48),rgba(0,0,0,.48)),
+    url('https://i.meee.com.tw/p5Cl9uQ.jpg') center/cover no-repeat;
+  filter:blur(18px);
+  transform:scale(1.06);
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)),
+    url('https://i.meee.com.tw/p5Cl9uQ.jpg') center/contain no-repeat;
 }
 
 /* ======== 標題置於畫面上半區中央 ======== */
